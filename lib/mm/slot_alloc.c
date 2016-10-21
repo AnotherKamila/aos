@@ -28,7 +28,7 @@ errval_t slot_prealloc_refill(void *this)
     struct slot_prealloc *sa = this;
     uint8_t refill = !sa->current;
     static bool is_refilling = false;
-    errval_t err;
+    errval_t err = SYS_ERR_OK;
 
     if (is_refilling) {
         return SYS_ERR_OK;
@@ -80,7 +80,7 @@ errval_t slot_prealloc_refill(void *this)
 
 out:
     is_refilling = false;
-    return SYS_ERR_OK;
+    return err;
 }
 
 errval_t slot_alloc_prealloc(void *inst, uint64_t nslots, struct capref *ret)
@@ -168,6 +168,7 @@ errval_t slot_alloc_basecn(void *inst, uint64_t nslots, struct capref *ret)
         struct capref cnode;
         err = slot_alloc_root(&cnode);
         if (err_is_fail(err)) {
+            DEBUG_ERR(err, "allocating root cnode slot");
             return err_push(err, LIB_ERR_SLOT_ALLOC);
         }
 
@@ -178,7 +179,7 @@ errval_t slot_alloc_basecn(void *inst, uint64_t nslots, struct capref *ret)
         }
 
         this->cap.slot = 0;
-        this->free = 1UL << DEFAULT_CNODE_BITS;
+        this->free = L2_CNODE_SLOTS;
     }
 
     assert(nslots <= this->free);
