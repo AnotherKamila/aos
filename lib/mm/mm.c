@@ -165,15 +165,21 @@ errval_t mm_init(struct mm *mm, enum objtype objtype,
 void mm_destroy(struct mm *mm)
 {
     debug_printf("mm: self-destruct sequence initiated\n");
-    for (struct mmnode *found = &mm->head; found != NULL; found = found->next) {
-        if (found->type == NodeType_Parent) { // we do not want to hold these anymore
-            errval_t err = cap_destroy(found->cap.cap);
+
+    // destroy caps
+    for (struct mmnode *node = &mm->head; node != NULL; node = node->next) {
+        if (node->type == NodeType_Parent) { // we do not want to hold these anymore
+            errval_t err = cap_destroy(node->cap.cap);
             if (err_is_fail(err)) debug_printf("ERROR destroying mem region cap: %s\n", err_getstring(err));
         }
     }
-    // since we've destroyed all caps to the memory we've been holding, we
-    // should be done even though we did not reclaim nodes or whatever...
-    // we've nuked it all anyway
+
+    // free slabs
+    for (struct mmnode *node = &mm->head; node != NULL; ) {
+        void *slab = node;
+        node = node->next; // do this while node is alive
+        mm_slab_free(mm, slab);
+    }
 }
 
 /**
