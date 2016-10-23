@@ -47,9 +47,35 @@ int main(int argc, char *argv[])
         assert(my_core_id > 0);
     }
 
+    CHECK("slot_alloc_init", slot_alloc_init());
+
     err = initialize_ram_alloc();
     if(err_is_fail(err)){
         DEBUG_ERR(err, "initialize_ram_alloc");
+    }
+
+    struct capref frame[20];
+    for (int i = 0; i < 20; ++i) slot_alloc(&frame[i]);
+    size_t retsize[20];
+    for (int i = 0; i < 20; ++i) {
+        CHECK("allocating frame",
+              frame_alloc(&frame[i], 50000000, &retsize[i]));
+        // struct frame_identity frame_id;
+        // CHECK("identifying frame",
+        //       frame_identify(frame[i], &frame_id));
+        // *((char*)(frame_id.base)) = 47;
+    }
+    for (int i = 0; i < 10; ++i) {
+        CHECK("freeing frame",
+              aos_ram_free(frame[i], retsize[i]));
+    }
+    for (int i = 0; i < 10; ++i) {
+        CHECK("allocating frame",
+              frame_alloc(&frame[i], 50000000, &retsize[i]));
+    }
+    for (int i = 0; i < 20; ++i) {
+        CHECK("freeing frame",
+              aos_ram_free(frame[i], retsize[i]));
     }
 
     debug_printf("Message handler loop\n");

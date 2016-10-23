@@ -25,14 +25,15 @@
 __BEGIN_DECLS
 
 enum nodetype {
-    NodeType_Free,      ///< This region exists and is free
-    NodeType_Allocated  ///< This region exists and is allocated
+    NodeType_Free,       ///< This region exists and is free
+    NodeType_Allocated,  ///< This region exists and is allocated
+    NodeType_Parent,     ///< A "parent" region, kept in the list with size=0 to avoid special cases
+    NodeType_Head,       /// sentinel
 };
 
 struct capinfo {
     struct capref cap;
     genpaddr_t base;
-    gensize_t size;
 };
 
 /**
@@ -59,7 +60,11 @@ struct mm {
     slot_refill_t slot_refill;   ///< Slot allocator refill function
     void *slot_alloc_inst;       ///< Opaque instance pointer for slot allocator
     enum objtype objtype;        ///< Type of capabilities stored
-    struct mmnode *head;         ///< Head of doubly-linked list of nodes in order
+    struct mmnode head;          ///< Head of doubly-linked list of nodes in order
+                                 ///    head doesn't hold data -- acts as a sentinel
+
+    bool slabs_refilling;
+    bool slots_refilling;
 };
 
 errval_t mm_init(struct mm *mm, enum objtype objtype,
